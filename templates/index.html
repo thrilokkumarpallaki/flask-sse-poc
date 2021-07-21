@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Sent Events POC</title>
+</head>
+<body>
+    <div>
+        <h3 class="header">Simulate Login and test SSE</h3>
+        <b>Login status: </b>
+        <span id="lgnStatus">Not LoggedIn</span><br /><br />
+        <label>username</label>
+        <input type="text" id="username" value="" />
+        <button id="loginBtn">Login</button><br /><br />
+
+        <b>Connect status: </b>
+        <span id="cntStatus">Not Connected</span><br /><br />
+        <button id="cntBtn">Connect</button>
+        <button id="disconnectBtn">Disconnect</button><br /><br />
+
+        <h3>Live Notification from server</h3>
+        <ul id="live-notifications"></ul>
+
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+            integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+    // Global vars
+    var sse_url = null;
+    var streamSource = null;
+    // set connection status
+    var connectStatus = document.getElementById('cntStatus');
+
+    // Login Logic
+    var lgnBtn = document.getElementById('loginBtn');
+    lgnBtn.addEventListener('click', function() {
+        var username = document.getElementById('username').value;
+        if (username !== '')
+            login(username.toLowerCase());
+    }, false);
+
+    async function login(user) {
+        const loginRes = await axios.get(`http://localhost:5000/simulate-login/${user}`);
+        const sseURL = loginRes.data.sse_url;
+        set_sse_url(sseURL);
+    }
+
+    // helper function to update the global sse_url variable
+    function set_sse_url(url) {
+        var lgnStatus = document.getElementById('lgnStatus');
+        lgnStatus.innerText = 'Login Successful';
+        sse_url = url;
+    }
+
+    // Connect Logic
+    var connectBtn = document.getElementById('cntBtn');
+    connectBtn.addEventListener('click', function() {
+        streamSource = new EventSource(sse_url);
+
+        var notificationList = document.getElementById('live-notifications');
+
+        // on Message
+        streamSource.addEventListener('publish', function(msgEvent) {
+            const msgData = JSON.parse(msgEvent.data);
+            
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(msgData.message));
+            notificationList.appendChild(li);
+            
+        }, false);
+
+        // on Error
+        streamSource.addEventListener('error', function(error) {
+            console.log(error);
+            connectStatus.innerText = 'Not Connected!';
+        }, false);
+
+
+        connectStatus.innerText = 'Connected!';
+
+    }, false);
+
+    // Disconnect Logic
+    var disconnectBtn = document.getElementById('disconnectBtn');
+    disconnectBtn.addEventListener('click', function() {
+        streamSource.close();
+        connectStatus.innerText = 'Disconnected';
+        sse_url = '';
+    });
+
+</script>
+</body>
+</html>

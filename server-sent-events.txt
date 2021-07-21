@@ -1,0 +1,16 @@
+Server Sent Events Connection HandShake
+
+- user authenticate
+- on successfull authentication of user response: sse-url with custom channel eg: http://localhost:5000/stream?channel='test'
+- client will open eventsource in frontend with the url that received in previous step
+- server can emit events with channel that will be stored when user specific event occurred
+
+
+
+Server Sent Events Limitations:
+
+- Only Server can send messages.(Clients will subscribe to the events)
+- Only text data can be passed because the stream is text\event-stream
+- Not suitable for binary data(eg: file, image, video)
+- One Browser can only connect to 6 sse connection from a single domain if protocol is HTTP/1.1
+- If protocol is HTTP/2.0 Browser can connect by default to 100 sse connection.
